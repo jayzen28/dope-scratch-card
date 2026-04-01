@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dope Scratch Demo</title>
+    <style>
+        body { background: #121212; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { position: relative; width: 300px; height: 300px; }
+        #result-img { position: absolute; width: 300px; height: 300px; z-index: 1; }
+        #scratch-canvas { position: absolute; z-index: 2; cursor: crosshair; }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <img id="result-img" src="result.png">
+        <canvas id="scratch-canvas" width="300" height="300"></canvas>
+    </div>
+
+    <audio id="scratch-audio" src="scratch_sound.mp3"></audio>
+
+   <script>
+    const canvas = document.getElementById('scratch-canvas');
+    const ctx = canvas.getContext('2d');
+    const audio = document.getElementById('scratch-audio');
+    const coverImg = new Image();
+    
+    // 1. 先設定載入邏輯
+    coverImg.onload = () => {
+        // 確保繪圖模式是正常的「蓋上去」
+        ctx.globalCompositeOperation = 'source-over'; 
+        ctx.drawImage(coverImg, 0, 0, 300, 300);
+        
+        // 2. 畫完圖後，再開啟「透明挖洞」模式
+        ctx.globalCompositeOperation = 'destination-out';
+    };
+
+    // 3. 最後才指定路徑（觸發載入）
+    // 請檢查你的檔名是 cover.png 還是 cover.jpg
+    coverImg.src = 'cover.png'; 
+
+    let isDrawing = false;
+
+    function scratch(e) {
+        if (!isDrawing) return;
+        
+        // 播放音效
+        if (audio.paused) {
+            audio.currentTime = 0;
+            audio.play().catch(()=>{}); 
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+        ctx.beginPath();
+        ctx.arc(x, y, 25, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 監聽滑鼠與觸控事件
+    canvas.addEventListener('mousedown', () => isDrawing = true);
+    window.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mousemove', scratch);
+    
+    canvas.addEventListener('touchstart', (e) => { 
+        isDrawing = true; 
+        e.preventDefault(); 
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', (e) => { 
+        scratch(e); 
+        e.preventDefault(); 
+    }, { passive: false });
+    
+    canvas.addEventListener('touchend', () => isDrawing = false);
+</script>
+</body>
+</html>
